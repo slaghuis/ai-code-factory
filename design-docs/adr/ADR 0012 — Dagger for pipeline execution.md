@@ -1,9 +1,4 @@
 ---
-
-## ADR 0012 — Dagger for pipeline execution
-
-```markdown
----
 id: 0012
 title: Dagger for pipeline execution
 status: Accepted
