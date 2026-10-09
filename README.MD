@@ -317,7 +317,7 @@ Then build (in order of ROI):
  4. **Incidents / PR history** collections (requires some backfill).
  5. **Confidence-based local → cloud escalation**.
 
- # Minimum Viable Setup to Start Saving Money This Week
+  # Minimum Viable Setup to Start Saving Money This Week
  1. Qdrant in Docker.
  2. A 150-line Go indexer that chunks your repo and upserts.
  3. An MCP server with just search_code and search_docs.
@@ -325,9 +325,9 @@ Then build (in order of ROI):
  5. Even without the semantic cache or local LLM escalation, this alone typically cuts cloud context size by 60%+.
 
 
-## Related Repos
+ ## Related Repos
 - [GO Indexer for Qdrant](https://github.com/slaghuis/indexer)
-- [MCP Server for Qdrant-Backed Code](https://github.com/slaghuis/map-code)
+- [MCP Server for Qdrant-Backed Code](https://github.com/slaghuis/mcp-server)
 - [LiteLLM Middleware with Semantic Cache & Smart Routing](https://github.com/slaghuis/cache-proxy)
 - [Telegram MCP Server](https://github.com/slaghuis/telegram-mcp)
 - [GO Indexer for Qrant](https://github.com/slaghuis/indexer)
