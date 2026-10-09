@@ -1,0 +1,103 @@
+listen: ":8080"
+
+upstream:
+  base_url: http://localhost:4000
+  api_key: sk-local-dev
+
+qdrant:
+  host: localhost
+  port: 6334
+  collection: semantic_cache
+
+ollama:
+  base_url: http://localhost:11434
+  model: bge-m3
+
+cache:
+  enabled: true
+  sqlite_path: ./cache.db
+  semantic_threshold: 0.95
+  max_prompt_chars: 24000
+  ttl_hours: 168   # 7 days
+
+routing:
+  default_model: claude-sonnet
+  default_local_model: qwen-coder
+  default_cloud_model: claude-sonnet
+  rules:
+    # Short prompts -> local, fast model
+    - when: { max_prompt_chars: 2000 }
+      model: qwen-coder-small
+    # Agent passes "x-task-tag: refactor" -> local 14b
+    - when: { has_tag: refactor }
+      model: qwen-coder
+    # Agent requests a specific model -> honor it
+    - when: { model_hint_equals: gpt-5 }
+      model: gpt-5
+    - when: { model_hint_equals: claude-sonnet }
+      model: claude-sonnet
+
+escalation:
+  enabled: true
+  # Fallback timeout: if local takes longer than this, escalate.
+  local_timeout_seconds: 25
+
+  # Default profile; applies to any request without a task_tag match.
+  default_profile:
+    local_model: qwen-coder
+    cloud_model: claude-sonnet
+    threshold: 0.65
+    expected_output_tokens: 400
+    enable_compile_check: true
+    enable_similarity_check: true
+    similarity_floor: 0.35
+
+  profiles:
+    # Code refactoring: strict. Local must shine or we escalate.
+    refactor:
+      local_model: qwen-coder
+      cloud_model: claude-sonnet
+      threshold: 0.80
+      expected_output_tokens: 600
+      enable_compile_check: true
+      enable_similarity_check: true
+      similarity_floor: 0.40
+
+    # Short explanations: loose. qwen-coder is fine.
+    explain:
+      local_model: qwen-coder-small
+      cloud_model: claude-sonnet
+      threshold: 0.50
+      expected_output_tokens: 300
+      enable_compile_check: false
+
+    # Boilerplate / repetitive: very loose.
+    boilerplate:
+      local_model: qwen-coder-small
+      cloud_model: claude-sonnet
+      threshold: 0.40
+      expected_output_tokens: 200
+
+    # Debugging: strict. Wrong answers are expensive to act on.
+    debug:
+      local_model: qwen-coder
+      cloud_model: claude-sonnet
+      threshold: 0.85
+      expected_output_tokens: 500
+      enable_compile_check: true
+      enable_similarity_check: true
+      similarity_floor: 0.45
+
+pricing:
+  claude-sonnet:
+    input_per_1m:  3.00
+    output_per_1m: 15.00
+  gpt-5:
+    input_per_1m:  5.00
+    output_per_1m: 20.00
+  qwen-coder:
+    input_per_1m:  0.0
+    output_per_1m: 0.0
+  qwen-coder-small:
+    input_per_1m:  0.0
+    output_per_1m: 0.0

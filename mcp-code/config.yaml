@@ -1,0 +1,11 @@
+qdrant:
+  host: localhost
+  port: 6334
+  code_collection: code_chunks
+  docs_collection: docs       # leave empty to disable search_docs
+
+ollama:
+  base_url: http://localhost:11434
+  model: nomic-embed-text
+
+cache_size: 512
