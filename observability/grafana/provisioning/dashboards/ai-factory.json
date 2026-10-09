@@ -1,0 +1,294 @@
+{
+  "uid": "ai-factory-main",
+  "title": "AI Factory",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "refresh": "30s",
+  "time": { "from": "now-24h", "to": "now" },
+  "panels": [
+    {
+      "type": "row",
+      "title": "Economics",
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 1 }
+    },
+    {
+      "type": "stat",
+      "title": "Cost (24h)",
+      "gridPos": { "x": 0, "y": 1, "w": 4, "h": 4 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(increase(cache_proxy_cost_usd_total[24h]))",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "currencyUSD", "decimals": 2 } }
+    },
+    {
+      "type": "stat",
+      "title": "Saved (est, 24h)",
+      "gridPos": { "x": 4, "y": 1, "w": 4, "h": 4 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(increase(cache_proxy_saved_usd_total[24h]))",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD", "decimals": 2,
+          "color": { "mode": "fixed", "fixedColor": "green" }
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Cache Hit Rate",
+      "gridPos": { "x": 8, "y": 1, "w": 4, "h": 4 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(rate(cache_proxy_requests_total{cache!=\"\"}[1h])) / sum(rate(cache_proxy_requests_total[1h]))",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percentunit", "decimals": 1 } }
+    },
+    {
+      "type": "stat",
+      "title": "Local-Pass Rate",
+      "gridPos": { "x": 12, "y": 1, "w": 4, "h": 4 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(rate(cache_proxy_requests_total{escalated=\"false\",cache=\"\"}[1h])) / sum(rate(cache_proxy_requests_total{cache=\"\"}[1h]))",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percentunit", "decimals": 1 } }
+    },
+    {
+      "type": "timeseries",
+      "title": "Cost per hour by model",
+      "gridPos": { "x": 16, "y": 1, "w": 8, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum by (model) (rate(cache_proxy_cost_usd_total[5m]) * 3600)",
+          "legendFormat": "{{model}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "currencyUSD" } }
+    },
+    {
+      "type": "piechart",
+      "title": "Cost by task tag (24h)",
+      "gridPos": { "x": 0, "y": 5, "w": 8, "h": 7 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum by (tag) (increase(cache_proxy_cost_usd_total[24h]))",
+          "legendFormat": "{{tag}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Requests per minute by cache outcome",
+      "gridPos": { "x": 8, "y": 5, "w": 8, "h": 7 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum by (cache) (rate(cache_proxy_requests_total[1m])) * 60",
+          "legendFormat": "{{cache}} (miss=blank)",
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "type": "row",
+      "title": "Quality",
+      "gridPos": { "x": 0, "y": 12, "w": 24, "h": 1 }
+    },
+    {
+      "type": "timeseries",
+      "title": "Local score distribution",
+      "gridPos": { "x": 0, "y": 13, "w": 12, "h": 7 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.5, sum by (le,tag) (rate(cache_proxy_local_score_bucket[5m])))",
+          "legendFormat": "p50 {{tag}}", "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.9, sum by (le,tag) (rate(cache_proxy_local_score_bucket[5m])))",
+          "legendFormat": "p90 {{tag}}", "refId": "B"
+        }
+      ],
+      "fieldConfig": { "defaults": { "min": 0, "max": 1 } }
+    },
+    {
+      "type": "timeseries",
+      "title": "Escalation rate by tag",
+      "gridPos": { "x": 12, "y": 13, "w": 12, "h": 7 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum by (tag) (rate(cache_proxy_requests_total{escalated=\"true\"}[5m])) / sum by (tag) (rate(cache_proxy_requests_total{cache=\"\"}[5m]))",
+          "legendFormat": "{{tag}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percentunit", "min": 0, "max": 1 } }
+    },
+
+    {
+      "type": "row",
+      "title": "Pipeline",
+      "gridPos": { "x": 0, "y": 20, "w": 24, "h": 1 }
+    },
+    {
+      "type": "stat",
+      "title": "Pipeline pass rate (24h)",
+      "gridPos": { "x": 0, "y": 21, "w": 4, "h": 4 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(increase(pipeline_mcp_runs_total{status=\"success\"}[24h])) / sum(increase(pipeline_mcp_runs_total[24h]))",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percentunit", "decimals": 1 } }
+    },
+    {
+      "type": "stat",
+      "title": "Runs today",
+      "gridPos": { "x": 4, "y": 21, "w": 4, "h": 4 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(increase(pipeline_mcp_runs_total[24h]))",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Stage duration by service",
+      "gridPos": { "x": 8, "y": 21, "w": 16, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.9, sum by (le,service,stage) (rate(pipeline_mcp_stage_duration_seconds_bucket[10m])))",
+          "legendFormat": "{{service}}/{{stage}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" } }
+    },
+    {
+      "type": "table",
+      "title": "Recent stage failures",
+      "gridPos": { "x": 0, "y": 25, "w": 8, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum by (service,stage) (increase(pipeline_mcp_stage_failures_total[24h]))",
+          "format": "table", "instant": true,
+          "refId": "A"
+        }
+      ]
+    },
+
+    {
+      "type": "row",
+      "title": "Humans & Knowledge",
+      "gridPos": { "x": 0, "y": 33, "w": 24, "h": 1 }
+    },
+    {
+      "type": "stat",
+      "title": "Pending approvals",
+      "gridPos": { "x": 0, "y": 34, "w": 4, "h": 4 },
+      "datasource": "Prometheus",
+      "targets": [{ "expr": "ai_factory_telegram_pending", "refId": "A" }],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 1 },
+              { "color": "red", "value": 5 }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Orphaned (post-restart)",
+      "gridPos": { "x": 4, "y": 34, "w": 4, "h": 4 },
+      "datasource": "Prometheus",
+      "targets": [{ "expr": "ai_factory_telegram_orphaned", "refId": "A" }]
+    },
+    {
+      "type": "timeseries",
+      "title": "Approval latency (p50/p90)",
+      "gridPos": { "x": 8, "y": 34, "w": 8, "h": 8 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.5, sum by (le) (rate(telegram_mcp_approval_latency_seconds_bucket[1h])))",
+          "legendFormat": "p50", "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.9, sum by (le) (rate(telegram_mcp_approval_latency_seconds_bucket[1h])))",
+          "legendFormat": "p90", "refId": "B"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" } }
+    },
+    {
+      "type": "stat",
+      "title": "Qdrant points",
+      "gridPos": { "x": 16, "y": 34, "w": 8, "h": 4 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum by (collection) (ai_factory_qdrant_points)",
+          "legendFormat": "{{collection}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Design-MCP tool usage (per hour)",
+      "gridPos": { "x": 0, "y": 42, "w": 12, "h": 7 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum by (tool) (rate(design_mcp_tool_calls_total[5m])) * 3600",
+          "legendFormat": "{{tool}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "type": "logs",
+      "title": "Service logs (filtered)",
+      "gridPos": { "x": 12, "y": 42, "w": 12, "h": 7 },
+      "datasource": "Loki",
+      "targets": [
+        {
+          "expr": "{job=\"ai-factory\"} |= \"ERROR\" | line_format \"{{.msg}}\"",
+          "refId": "A"
+        }
+      ]
+    }
+  ]
+}
