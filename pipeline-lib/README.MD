@@ -92,6 +92,135 @@ kubectl -n myservice-staging apply -f deploy/k8s/base-deployment.yaml
 ```
 Your `pipeline.yaml` already points at `k3d-dev` for staging.
 
+ ## The Full Physical Layout on Your Mac
+Here's the recommended directory layout, with everything you've built so far:
+```
+~/code/
+│
+├── ai-factory/                      # The shared AI infrastructure
+│   │                                # (one git repo, or four — your choice)
+│   │
+│   ├── indexer/                     # Service 1: Qdrant indexer
+│   │   ├── go.mod
+│   │   ├── cmd/indexer/
+│   │   ├── internal/
+│   │   └── config.yaml
+│   │
+│   ├── mcp-code/                    # Service 2: Code-search MCP
+│   │   ├── go.mod
+│   │   ├── cmd/mcp-code/
+│   │   ├── internal/
+│   │   └── config.yaml
+│   │
+│   ├── cache-proxy/                 # Service 3: LiteLLM cache proxy
+│   │   ├── go.mod
+│   │   ├── cmd/cache-proxy/
+│   │   ├── internal/
+│   │   └── config.yaml
+│   │
+│   ├── telegram-mcp/                # Service 4: Telegram MCP
+│   │   ├── go.mod
+│   │   ├── cmd/telegram-mcp/
+│   │   ├── internal/
+│   │   └── config.yaml
+│   │
+│   ├── pipeline-mcp/                # Service 5: Pipeline MCP (next build)
+│   │   ├── go.mod
+│   │   ├── cmd/pipeline-mcp/
+│   │   ├── internal/
+│   │   └── config.yaml
+│   │
+│   └── pipeline-lib/                # SHARED pipeline library
+│       ├── go.mod                   # module: github.com/you/pipeline-lib
+│       ├── stages/                  # lint.go test.go build.go deploy.go
+│       ├── config/
+│       ├── report/
+│       └── telegram/
+│
+└── services/                        # Your actual Go services
+    │
+    ├── myservice/                   # A real microservice
+    │   ├── go.mod                   # module: github.com/you/myservice
+    │   ├── main.go
+    │   ├── internal/
+    │   ├── deploy/
+    │   │   └── k8s/
+    │   ├── pipeline.yaml            # ← per-service pipeline config
+    │   └── pipeline/                # ← tiny per-service pipeline binary
+    │       ├── go.mod               # module: github.com/you/myservice/pipeline
+    │       └── main.go              # ~30 lines, just calls pipeline-lib
+    │
+    ├── another-service/
+    │   ├── go.mod
+    │   ├── pipeline.yaml
+    │   └── pipeline/
+    │       └── main.go
+    │
+    └── a-third-service/
+        └── ...
+```
+
+ ## Minimal Per-Service Pipeline Wrapper
+Here's what `~/code/services/myservice/pipeline/main.go becomes` — essentially a thin wrapper:
+```
+package main
+
+import (
+    "os"
+    "github.com/you/pipeline-lib/cli"
+)
+
+func main() {
+    // Everything (flags, dagger connect, stage dispatch) lives in pipeline-lib.
+    // This file exists only to produce a per-service binary.
+    os.Exit(cli.Run(os.Args[1:]))
+}
+```
+That's it. Every service has an identical main.go. Variation lives in pipeline.yaml.
+If a service needs a custom stage (e.g., "run my proto codegen before build"), it can override:
+```
+package main
+
+import (
+    "context"
+    "github.com/you/pipeline-lib/cli"
+    "github.com/you/pipeline-lib/stages"
+    "dagger.io/dagger"
+)
+
+func main() {
+    cli.RegisterHook("pre-build", func(ctx context.Context, dag *dagger.Client, src *dagger.Directory) error {
+        _, err := stages.Base(ctx, dag, cfg, src).
+            WithExec([]string{"go", "generate", "./..."}).
+            Sync(ctx)
+        return err
+    })
+    os.Exit(cli.Run(os.Args[1:]))
+}
+```
+ ## Service Registry — How Pipeline-MCP Finds Services
+A simple YAML file tells the pipeline-MCP where your services live:
+```
+# ~/.config/ai-factory/services.yaml
+services:
+  - name: myservice
+    path: ~/code/services/myservice
+    pipeline_binary: ./bin/pipeline     # relative to path
+    default_env: staging
+
+  - name: another-service
+    path: ~/code/services/another-service
+    pipeline_binary: ./bin/pipeline
+
+  - name: payments
+    path: ~/code/services/payments
+    pipeline_binary: ./bin/pipeline
+```
+The pipeline-MCP server reads this on startup (and on SIGHUP), and agents can call:
+ - `pipeline_list_services()` → returns the list
+ - `pipeline_run(service="myservice", command="test")` → shells out to that service's binary
+ - `pipeline_run(service="myservice", command="release", env="staging")`
+
  ## Operational Notes
  - **First run is slow (~2 min)** — Dagger pulls base images and builds caches. Second run on no code changes: ~5 s.
  - **Cache volumes persist** across runs on the same machine. In CI, use Dagger Cloud or BuildKit cache mounts.
