@@ -161,7 +161,34 @@ Here's the recommended directory layout, with everything you've built so far:
 ```
 
  ## Minimal Per-Service Pipeline Wrapper
-Here's what `~/code/services/myservice/pipeline/main.go becomes` — essentially a thin wrapper:
+
+ ### Service Repo Layout
+```
+~/code/services/myservice/
+├── go.mod                           # module: github.com/slaghuis/myservice
+├── main.go
+├── internal/
+├── deploy/
+│   └── k8s/
+├── pipeline.yaml                    # service's pipeline config
+└── pipeline/
+    ├── go.mod                       # module: github.com/slaghuis/myservice/pipeline
+    └── main.go                      # ~10 lines
+```
+ ### Part Two `services/myservice/pipeline/go.mod`
+```
+module github.com/slaghuis/myservice/pipeline
+
+go 1.23
+
+require github.com/slaghuis/pipeline-lib v0.0.0
+
+// During development, point at local pipeline-lib:
+replace github.com/slaghuis/pipeline-lib => ../../../ai-factory/pipeline-lib
+```
+Once you push `pipeline-lib` to GitHub and tag it, drop the `replace` directive and `go get` the tagged version.
+
+### Part 3 Here's what `~/code/services/myservice/pipeline/main.go becomes` — essentially a thin wrapper:
 ```
 package main
 
@@ -198,6 +225,63 @@ func main() {
     os.Exit(cli.Run(os.Args[1:]))
 }
 ```
+### Part 4 `services/myservice/pipeline.yaml`
+```
+service: myservice
+main_package: ./cmd/myservice
+go_version: "1.23"
+
+lint:
+  enabled: true
+
+test:
+  race: true
+  coverage: true
+  coverage_min: 70
+
+scan:
+  govulncheck: true
+  trivy: true
+
+build:
+  image: myservice
+  registry: ${REGISTRY}
+
+integration:
+  enabled: false
+
+deploy:
+  manifests: ./deploy/k8s
+  environments:
+    staging:
+      kube_context: k3d-dev
+      namespace: myservice-staging
+    production:
+      kube_context: prod
+      namespace: myservice
+
+approval:
+  telegram_mcp_url: http://localhost:8765
+  required_for: [staging, production]
+  timeout_seconds: 3600
+
+notify:
+  on_failure: true
+  on_success: true
+```
+ ### Part 5 Build the Per-Service Binary
+```
+cd ~/code/services/myservice/pipeline
+go build -o ../bin/pipeline .
+
+# From the service root:
+cd ..
+./bin/pipeline test
+./bin/pipeline release -env staging
+```
+
+
+
  ## Service Registry — How Pipeline-MCP Finds Services
 A simple YAML file tells the pipeline-MCP where your services live:
 ```
