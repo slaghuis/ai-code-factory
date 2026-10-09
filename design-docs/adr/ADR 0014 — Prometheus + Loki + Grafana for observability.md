@@ -1,9 +1,4 @@
 ---
-
-## ADR 0014 — Prometheus + Loki + Grafana for observability
-
-```markdown
----
 id: 0014
 title: Prometheus plus Loki plus Grafana for observability
 status: Accepted
