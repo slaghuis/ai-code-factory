@@ -1,0 +1,13 @@
+listen: ":9101"
+scrape_interval_seconds: 30
+
+sources:
+  cache_proxy:
+    sqlite_path: ~/code/ai-factory/cache-proxy/cache.db
+  telegram:
+    sqlite_path: ~/code/ai-factory/telegram-mcp/telegram-mcp.db
+  pipeline:
+    reports_dir: ~/.local/share/ai-factory/reports
+  qdrant:
+    url: http://localhost:6333
+    collections: [code_chunks, design_docs, semantic_cache]
