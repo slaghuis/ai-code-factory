@@ -41,6 +41,7 @@ EOF
 # From anywhere:
 pipeline-mcp -config ~/.config/ai-factory/pipeline-mcp.yaml
 ```
+Or add a launchd plist similar to telegram-mcp.
 
 ## Wire into agents
 Add to `~/.config/opencode/opencode.json`:
