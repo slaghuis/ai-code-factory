@@ -84,6 +84,7 @@ You can comfortably run one 7B–14B model at Q4/Q5 alongside your dev work, or 
  | Complex debugging / root cause | Claude Sonnet 4.5 / GPT-5 | 
  | Deployment plan generation | Claude Sonnet 4.5 |
  | Code review of agent output | GPT-5 (cross-check) |
+
 **Routing tip**: use **LiteLLM** (`pip install litellm`) as a local proxy with an OpenAI-compatible endpoint. Define rules so cheap tasks hit Ollama and heavy tasks hit Anthropic/OpenAI. Also enforces budget caps and logs cost per task.
  ## Recommended Autonomous Loop
  1. **You** write a task spec in a markdown file (tasks/TASK-123.md) with acceptance criteria.
@@ -97,6 +98,7 @@ You can comfortably run one 7B–14B model at Q4/Q5 alongside your dev work, or 
  - `telegram.notify(message)`
  - `telegram.request_approval(context, options[]) → waits for reply`
  - `telegram.ask_question(prompt) → string`
+
 The agent calls these as tools. Approval requests block until you tap a button.
 ## Cost Optimization Levers
  1. **LiteLLM proxy** with per-model budgets and a daily cap.
@@ -160,6 +162,7 @@ Every cloud call has two cost drivers: input tokens (your context) and output to
  | "Have we solved this before?" | Agent re-derives from scratch | Returns prior solution from memory |
  | ADR / design doc lookup | Reads whole doc tree | Retrieves 2–3 relevant ADRs |
  | Error triage | Sends full stack trace + logs to cloud | Matches against prior incidents first |
+
 Realistic savings on a mature setup: 40–70% reduction in cloud tokens.
  ## Updated Architecture (with Qdrant as First-Class Citizen)
 ```
@@ -201,6 +204,7 @@ Design multiple collections rather than one giant blob:
  | test_failures | Failing test outputs + fixes | bge-m3 | On CI run |
  | go_stdlib_patterns | Idiomatic snippets you've curated | nomic-embed-text | Manual |
  | tasks | Prior task specs + outcomes | bge-m3 | On task close |
+
 Separate collections = faster search, better filtering, independent TTLs.
 
 ## The Semantic Cache Pattern (highest ROI)
@@ -244,6 +248,7 @@ Key thresholds (tune to taste):
  | pgvector | One DB for all | Slower for pure vector workloads |
  | LanceDB | Embedded, no server | Younger ecosystem |
  | Milvus | Scale-out | Overkill for a Mac Mini |
+
 Qdrant is the sweet spot for a single-machine AI factory: ~200MB RAM idle, handles millions of vectors on your hardware, OpenAPI + gRPC, works with every agent framework.
 
 ## Installation & setup
@@ -274,6 +279,7 @@ Create a small Go daemon or Dagger task that:
  3. **Embeds** via local Ollama endpoint.
  4. **Upserts to Qdrant** with payload: {repo, path, symbol, kind, lang, mtime}.
  5. **Deletes stale vectors** when files change (use file hash as part of point ID).
+
 For docs: chunk by markdown headings (H2/H3), keep heading path in payload for better retrieval.
 
  ## MCP Server Exposing Qdrant to Agents
@@ -289,6 +295,7 @@ tools:
 ```
 Then in your opencode / Claude Code config, instruct the agent:
  > "Before answering any non-trivial question, call search_code and search_docs. Before escalating to cloud models, call cache_lookup. Store useful findings via remember."
+
 This is the magic — the agent learns to query local first because its tools make it the path of least resistance.
 
  ## Updated Local vs Cloud Table
@@ -309,6 +316,7 @@ Add metrics so you can see what Qdrant saves you:
  - `local_llm_success_rate` (how often local was good enough)
  - `escalation_rate` (local → cloud)
  - `retrieval_latency_ms`
+
 Grafana dashboard with a "cost avoided today" tile. Very satisfying to watch.
 
 Then build (in order of ROI):
