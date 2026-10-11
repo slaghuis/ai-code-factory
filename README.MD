@@ -62,7 +62,7 @@ Install MCP servers so opencode/Claude Code can act:
  - **PlantUML** / **Mermaid** — AI-friendly diagrams-as-code
  - **ADR tools** (`adr-tools`) — architecture decision records
  ## What to Run Locally vs Cloud
- ###Mac Mini M4 24GB — realistic capacity
+ ### Mac Mini M4 24GB — realistic capacity
 You can comfortably run one 7B–14B model at Q4/Q5 alongside your dev work, or a 30B at Q3 if you close other apps. Keep 8–10GB headroom for the OS and Cursor.
  ### Run locally (cost savers)
  | Workload | Model Suggestion |
@@ -78,6 +78,7 @@ You can comfortably run one 7B–14B model at Q4/Q5 alongside your dev work, or 
  | Quick refactors / rename-across-files | Qwen2.5-Coder 14B |
  ### Run in the cloud (quality matters)
  | Workload | Recommended Model |
+ | -------- | ----------------- |
  | Architecture/design reasoning | Claude Sonnet 4.5 or GPT-5 |
  | Multi-file feature implementation | Claude Sonnet 4.5 (coding leader) |
  | Complex debugging / root cause | Claude Sonnet 4.5 / GPT-5 | 
