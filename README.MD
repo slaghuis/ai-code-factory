@@ -339,12 +339,8 @@ Then build (in order of ROI):
 - [MCP Server for Qdrant-Backed Code](https://github.com/slaghuis/mcp-server)
 - [LiteLLM Middleware with Semantic Cache & Smart Routing](https://github.com/slaghuis/cache-proxy)
 - [Telegram MCP Server](https://github.com/slaghuis/telegram-mcp)
-- [GO Indexer for Qrant](https://github.com/slaghuis/indexer)
 - [Pipeline Lib](https://github.com/slaghuis/pipeline-lib)
 - [Pipeline MCP](https://github.com/slaghuis/pipeline-mcp)
 - [Design Indexer](https://github.com/slaghuis/design-indexer)
 - [Design MCP](https://github.com/slaghuis/design-mcp)
-
-
-
-
+- [Metrics Exporter](https://github.com/slaghuis/metrics-exporter)
